@@ -7,3 +7,4 @@ edition = "2024"
 serde_json = "1.0.154"
 reqwest = { version = "0.13.5", features = ["blocking", "json"] }
 tar = "0.4.46"
+uuid = { version = "1.29.2", features = ["v4"] }
