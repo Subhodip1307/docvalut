@@ -1,6 +1,7 @@
 use std::env;
-mod push;
-
+mod push_image;
+mod structures;
+use push_image::push;
 
 fn print_usage(program: &str) {
     println!("Usage:");
@@ -19,7 +20,7 @@ fn main() {
     }
 
     match args[1].as_str() {
-        "push"=>{},
+        "push"=>{push(&args[2])},
         "pull"=>{},
         _=>{}
     }
