@@ -1,7 +1,9 @@
 use std::env;
 mod push_image;
+mod pull_image;
 mod structures;
 use push_image::push;
+
 
 fn print_usage(program: &str) {
     println!("Usage:");
@@ -20,10 +22,8 @@ fn main() {
     }
 
     match args[1].as_str() {
-        "push"=>{push(&args[2])},
-        "pull"=>{},
-        _=>{}
+        "push" => push(&args[2]),
+        "pull" => {}
+        _ => {}
     }
 }
-
-

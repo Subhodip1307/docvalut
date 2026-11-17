@@ -1,7 +1,7 @@
-use serde::{Deserialize,Serialize};
 use core::str;
-use std::path::{PathBuf};
-use std::{collections::HashMap};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Debug, Deserialize)]
@@ -11,50 +11,48 @@ pub struct Manifest {
     pub layer_sources: HashMap<String, LayerSource>,
 }
 
-#[derive(Debug, Deserialize,Serialize,Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct LayerSource {
     #[serde(rename = "mediaType")]
-   pub media_type: String,
+    pub media_type: String,
     pub size: u64,
     pub digest: String,
 }
 
-pub struct  ApiData{
-   pub image_name:Arc<String>,
-   pub digest:String,
-   pub file_path:Arc<PathBuf>,
-   pub config_layer:LayerSource,
-   pub all_layers:Vec<LayerSource>,
-   pub tag:String
+pub struct ApiData {
+    pub image_name: Arc<String>,
+    pub digest: String,
+    pub file_path: Arc<PathBuf>,//actually the folder path
+    pub config_layer: LayerSource,
+    pub all_layers: Vec<LayerSource>,
+    pub tag: Arc<String>,
 }
-impl ApiData  {
-    pub fn get_path(&self)->PathBuf{
-        let hash=self.digest.split(":").collect::<Vec<&str>>()[1];
+impl ApiData {
+    pub fn get_path(&self) -> PathBuf {
+        let hash = self.digest.split(":").collect::<Vec<&str>>()[1];
         // println!("the previos");
-        self.file_path.join(format!("blobs/sha256/{}",hash))
+        self.file_path.join(format!("blobs/sha256/{}", hash))
     }
-    pub fn get_tag(&self)->&str{
+    pub fn get_tag(&self) -> &str {
         &self.tag
     }
 }
 
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ManifestPayload{
-    schema_version:i8,
-    media_type:String,
-    config:LayerSource,//keep the Config layer info
-    layers:Vec<LayerSource>//keep the all LayerSources here except the Config
+pub struct ManifestPayload {
+    schema_version: i8,
+    media_type: String,
+    config: LayerSource,      //keep the Config layer info
+    layers: Vec<LayerSource>, //keep the all LayerSources here except the Config
 }
 impl ManifestPayload {
-    pub fn new(config:LayerSource,layers:Vec<LayerSource>)->Self{
-        Self{
-            schema_version:2,
-            media_type:"application/vnd.oci.image.manifest.v1+json".to_string(),
-            config:config,
-            layers:layers
+    pub fn new(config: LayerSource, layers: Vec<LayerSource>) -> Self {
+        Self {
+            schema_version: 2,
+            media_type: "application/vnd.oci.image.manifest.v1+json".to_string(),
+            config,
+            layers,
         }
-
     }
 }

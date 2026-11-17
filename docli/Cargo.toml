@@ -9,3 +9,4 @@ reqwest = { version = "0.13.5", features = ["blocking", "json"] }
 tar = "0.4.46"
 uuid = { version = "1.29.2", features = ["v4"] }
 serde = { version = "1.0.229", features = ["derive"] }
+rayon = "1.12.0"
