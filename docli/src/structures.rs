@@ -38,7 +38,7 @@ impl ApiData {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize,Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ManifestPayload {
     schema_version: i8,

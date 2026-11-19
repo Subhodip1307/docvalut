@@ -11,7 +11,7 @@ use std::{
 use tar::Archive;
 use uuid::Uuid;
 
-const EXPORT_PATH: &str = "/tmp/dockervault";
+const EXPORT_PATH: &str = "/tmp/dockervault/download";
 const BASE_DOMAIN: &str = "http://127.0.0.1:8000/v1/";
 
 /*
@@ -119,6 +119,7 @@ fn read_manifest(
             }
         });
     });
+    // ToDO need to write code to delete the folder and it's tar
 
     Ok(())
 }
