@@ -22,7 +22,7 @@ pub struct LayerSource {
 pub struct ApiData {
     pub image_name: Arc<String>,
     pub digest: String,
-    pub file_path: Arc<PathBuf>,//actually the folder path
+    pub file_path: Arc<PathBuf>, //actually the folder path
     pub config_layer: LayerSource,
     pub all_layers: Vec<LayerSource>,
     pub tag: Arc<String>,
@@ -38,7 +38,7 @@ impl ApiData {
     }
 }
 
-#[derive(Debug, Serialize,Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ManifestPayload {
     pub schema_version: i8,
@@ -59,25 +59,25 @@ impl ManifestPayload {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct DockerManifest{
+pub struct DockerManifest {
     // manifest for saving docker
-    pub config:String,
-    pub repo_tags:Vec<String>,
-    pub layers:Vec<String>
+    pub config: String,
+    pub repo_tags: Vec<String>,
+    pub layers: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Diffids{
-    diff_ids:Vec<String>
+pub struct Diffids {
+    diff_ids: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ConfigJson{
-    // read and parse the downloaded config json 
-    rootfs:Diffids
+pub struct ConfigJson {
+    // read and parse the downloaded config json
+    rootfs: Diffids,
 }
-impl ConfigJson  {
-    pub fn get_ids(&self)->&Vec<String>{
+impl ConfigJson {
+    pub fn get_ids(&self) -> &Vec<String> {
         &self.rootfs.diff_ids
     }
 }

@@ -1,4 +1,5 @@
 use crate::structures::{ApiData, LayerSource, Manifest, ManifestPayload};
+use docli::{Ac, separate_tag_n_image};
 use rayon::prelude::*;
 use reqwest::StatusCode;
 use std::fs::File;
@@ -15,12 +16,11 @@ const EXPORT_PATH: &str = "/tmp/dockervault/download";
 const BASE_DOMAIN: &str = "http://127.0.0.1:8000/v1/";
 
 /*
-TODO: 
+TODO:
 1.Improve error handeling,
 2.Clean the folder and file after use and download
 3. add Auth
 */
-
 
 pub fn push(image_reference: &str) {
     std::fs::create_dir_all(EXPORT_PATH).unwrap();
@@ -42,21 +42,13 @@ pub fn push(image_reference: &str) {
     read_manifest(&exported_path, image_reference).unwrap();
 }
 
-fn separate_tag_n_image(image_reference: &str) -> (Arc<String>, Arc<String>) {
-    let (image, tag) = image_reference
-        .split_once(":")
-        .unwrap_or((image_reference, "latest"));
-    (Arc::new(image.to_string()),Arc::new( tag.to_string()))
-}
-
 fn pull_image(image_reference: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let client = reqwest::blocking::Client::builder()
         .unix_socket("/var/run/docker.sock")
         .timeout(None) // big images take a while; default is 30s
         .build()?;
 
-    let image_export_path =
-        Path::new(EXPORT_PATH).join(format!("{}.tar", Uuid::new_v4()));
+    let image_export_path = Path::new(EXPORT_PATH).join(format!("{}.tar", Uuid::new_v4()));
 
     let mut resp = client
         .get(format!("http://localhost/images/{}/get", image_reference))
@@ -90,7 +82,7 @@ fn read_manifest(
     let config_layer = create_config_layer(image_path, &m.config);
     // println!("config: {}", m.config);
     let all_layers: Vec<LayerSource> = m.layer_sources.values().cloned().collect();
-    let folder_path=Arc::new(image_path.to_path_buf());
+    let folder_path = Arc::new(image_path.to_path_buf());
 
     let thread_count = {
         let cores = thread::available_parallelism()
@@ -98,7 +90,7 @@ fn read_manifest(
             .unwrap_or(1);
         min(cores, all_layers.len())
     };
-    let mut all_layers_iter=all_layers.clone();
+    let mut all_layers_iter = all_layers.clone();
     all_layers_iter.push(config_layer.clone());
 
     let pool = rayon::ThreadPoolBuilder::new()
@@ -140,7 +132,6 @@ fn create_config_layer(image_path: &Path, config: &str) -> LayerSource {
     }
 }
 
-type Ac = reqwest::blocking::Client;
 fn push_api_collections(api_client: Ac, data: ApiData) -> Result<(), Box<dyn std::error::Error>> {
     // check blob
     let res = api_client

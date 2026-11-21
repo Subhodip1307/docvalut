@@ -1,10 +1,11 @@
 use std::env;
-mod push_image;
+mod login;
 mod pull_image;
+mod push_image;
 mod structures;
-use push_image::push;
 use pull_image::pull;
-
+use push_image::push;
+use login::init_login;
 
 fn print_usage(program: &str) {
     println!("Usage:");
@@ -24,7 +25,8 @@ fn main() {
 
     match args[1].as_str() {
         "push" => push(&args[2]),
-        "pull" => {pull(&args[2])}
+        "pull" => pull(&args[2]),
+        "login"=>init_login(),
         _ => {}
     }
 }
