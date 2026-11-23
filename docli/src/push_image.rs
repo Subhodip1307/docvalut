@@ -1,5 +1,5 @@
 use crate::structures::{ApiData, LayerSource, Manifest, ManifestPayload};
-use docli::{Ac, separate_tag_n_image};
+use docli::{Ac, separate_tag_n_image,init_client};
 use rayon::prelude::*;
 use reqwest::StatusCode;
 use std::fs::File;
@@ -76,7 +76,7 @@ fn read_manifest(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(image_path.join("manifest.json"))?;
     let manifests: Vec<Manifest> = serde_json::from_reader(file)?;
-    let client = reqwest::blocking::Client::new();
+    let client = init_client();
     let (image_name, tag) = separate_tag_n_image(image_reference);
     let m: &Manifest = &manifests[0];
     let config_layer = create_config_layer(image_path, &m.config);

@@ -1,21 +1,17 @@
-use std::env;
-use std::fs::{self, File};
-use std::path::PathBuf;
+use keyring::Entry;
 
-pub fn init_login(){
-    check_or_create_file();
+
+pub fn init_login(token:&String){
+    if let  Err(e)=save_cread(token){
+        println!("Error: {}", e);
+        return;
+    }
+    println!("Credential Saved")
+
 }
 
-fn check_or_create_file()->bool {
-    let base_path: PathBuf = env::var_os("HOME").unwrap().into();
-    let config_path = base_path.join(".config/.docli/config.toml");
-    if config_path.exists() {
-        true
-        } else {
-        if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent).unwrap();
-        }
-        File::create(config_path).unwrap();
-        false
-    }
+fn save_cread(token:&String) -> Result<(), Box<dyn std::error::Error>>{
+    let entry = Entry::new("docvalut", "Etheric_Sea")?;
+    entry.set_password(token)?;
+    Ok(())
 }

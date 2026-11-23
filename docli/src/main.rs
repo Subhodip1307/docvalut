@@ -26,7 +26,7 @@ fn main() {
     match args[1].as_str() {
         "push" => push(&args[2]),
         "pull" => pull(&args[2]),
-        "login"=>init_login(),
+        "login"=>init_login(&args[2]),
         _ => {}
     }
 }

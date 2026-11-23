@@ -1,5 +1,5 @@
 use crate::structures::{ConfigJson, DockerManifest, LayerSource, ManifestPayload};
-use docli::{Ac, separate_tag_n_image};
+use docli::{Ac, separate_tag_n_image,init_client};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs::{self, File};
@@ -14,7 +14,7 @@ const BASE_DOMAIN: &str = "http://127.0.0.1:9000/v1/pull/";
 
 pub fn pull(image_reference: &str) {
     let (image, tag) = separate_tag_n_image(image_reference);
-    let client = reqwest::blocking::Client::new();
+    let client = init_client();
     let manifest = match fetch_manifest(client.clone(), image.clone(), tag) {
         Ok(v) => v,
         Err(e) => {
