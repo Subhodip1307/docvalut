@@ -1,5 +1,5 @@
 use crate::structures::{ConfigJson, DockerManifest, LayerSource, ManifestPayload};
-use docli::{Ac, separate_tag_n_image,init_client};
+use moor::{Ac, separate_tag_n_image,init_client};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs::{self, File};
@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tar::Builder;
 use uuid::Uuid;
 
-const EXPORT_PATH: &str = "/tmp/dockervault/download";
+const EXPORT_PATH: &str = "/tmp/Moorage/download";
 const BASE_DOMAIN: &str = "http://127.0.0.1:9000/v1/pull/";
 
 pub fn pull(image_reference: &str) {

@@ -1,8 +1,8 @@
 use crate::structures::{ApiData, LayerSource, Manifest, ManifestPayload};
-use docli::{Ac, separate_tag_n_image,init_client};
+use moor::{Ac, separate_tag_n_image,init_client};
 use rayon::prelude::*;
 use reqwest::StatusCode;
-use std::fs::File;
+use std::fs::{File,self};
 use std::thread;
 use std::{
     cmp::min,
@@ -12,14 +12,12 @@ use std::{
 use tar::Archive;
 use uuid::Uuid;
 
-const EXPORT_PATH: &str = "/tmp/dockervault/download";
+const EXPORT_PATH: &str = "/tmp/Moorage/download";
 const BASE_DOMAIN: &str = "http://127.0.0.1:8000/v1/";
 
 /*
 TODO:
 1.Improve error handeling,
-2.Clean the folder and file after use and download
-3. add Auth
 */
 
 pub fn push(image_reference: &str) {
@@ -35,11 +33,15 @@ pub fn push(image_reference: &str) {
 
     match unzip_image(&exported_path) {
         Ok(_) => {
-            println!("export done")
+            if let Err(e)=read_manifest(&exported_path, image_reference){
+                println!("{e}");
+            };
         }
-        Err(e) => println!("the error in 22{e}"),
+        Err(e) => {
+            eprintln!("{e}");
+        },
     }
-    read_manifest(&exported_path, image_reference).unwrap();
+    clear_file(exported_path);
 }
 
 fn pull_image(image_reference: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -56,8 +58,21 @@ fn pull_image(image_reference: &str) -> Result<PathBuf, Box<dyn std::error::Erro
         .error_for_status()?;
 
     let mut file = File::create(&image_export_path)?;
-    resp.copy_to(&mut file)?; // streams to disk, doesn't load it all into memory
+     
+    match resp.copy_to(&mut file){
+        Err(e)=>{
+            clear_file(image_export_path);
+            return  Err(Box::new(e))
+        },
+        Ok(_)=>{},
+    }; // streams to disk, doesn't load it all into memory
     Ok(image_export_path.with_extension(""))
+}
+
+fn clear_file(file_path:PathBuf){
+    let _=fs::remove_dir_all(&file_path);
+    let _=fs::remove_file(file_path.with_extension("tar"));
+
 }
 
 fn unzip_image(package_path: &Path) -> std::io::Result<()> {

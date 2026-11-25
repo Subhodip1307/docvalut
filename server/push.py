@@ -4,7 +4,7 @@ from pathlib import Path
 import requests
 from urllib.parse import urljoin
 
-EXPORT_PATH=Path("/tmp/dockervault")
+EXPORT_PATH=Path("/tmp/Moorage")
 BASE_DOMAIN="http://localhost:8000/v1/"
 IMAGE_NAME='mongo'
 PUSHING_TAG="latest"
