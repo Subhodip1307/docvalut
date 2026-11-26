@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import Image from "next/image";
+import Link from "next/link";
 import {
-  FolderGit2,
   Tag as TagIcon,
   Plus,
   Search,
@@ -15,13 +14,11 @@ import {
 } from "lucide-react";
 
 import CreateRepoModal from "@/components/CreateRepoModal";
-import CreateTagModal from "@/components/CreateTagModal";
-import RepoDetailsModal from "@/components/RepoDetailsModal";
+import RepoIcon from "@/components/RepoIcon";
 import {
   api,
   API_BASE_URL,
   Repository,
-  getAuthToken,
 } from "@/lib/api";
 
 export default function Home() {
@@ -30,10 +27,6 @@ export default function Home() {
 
   // Modals state
   const [isCreateRepoOpen, setIsCreateRepoOpen] = useState(false);
-  const [isCreateTagOpen, setIsCreateTagOpen] = useState(false);
-  const [selectedTagRepoId, setSelectedTagRepoId] = useState<string>("");
-  const [selectedDetailsRepo, setSelectedDetailsRepo] = useState<Repository | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Delete confirmation state
   const [repoToDelete, setRepoToDelete] = useState<Repository | null>(null);
@@ -47,23 +40,8 @@ export default function Home() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successToast, setSuccessToast] = useState("");
 
-  // Auth token presence
-  const hasToken = typeof window !== "undefined" ? !!getAuthToken() : false;
-
   const handleRefresh = () => {
     setRefreshIndex((prev) => prev + 1);
-  };
-
-  // Open Details Modal for a repository (shows its tags & blobs)
-  const handleOpenDetails = (repo: Repository) => {
-    setSelectedDetailsRepo(repo);
-    setIsDetailsOpen(true);
-  };
-
-  // Open Create Tag modal for a specific repository
-  const handleOpenCreateTagForRepo = (repoId: string) => {
-    setSelectedTagRepoId(repoId);
-    setIsCreateTagOpen(true);
   };
 
   // Delete repository handler - calls /logic/master/create/delete-my-repository/
@@ -137,7 +115,7 @@ export default function Home() {
   }, [repositories, searchQuery]);
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="w-full space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -146,10 +124,6 @@ export default function Home() {
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-2">
             <span>Manage document and image repositories.</span>
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-              <span className={`w-1.5 h-1.5 rounded-full ${hasToken ? "bg-emerald-500" : "bg-amber-500"}`} />
-              {hasToken ? "Authenticated" : "No Token"}
-            </span>
           </p>
         </div>
 
@@ -175,6 +149,8 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Error Notification */}
+
       {/* Success Notification */}
       {successToast && (
         <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2.5 transition-all">
@@ -183,59 +159,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Error Notification */}
-      {errorMsg && (
-        <div className="p-3.5 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleRefresh}
-            className="underline font-semibold hover:opacity-80 cursor-pointer"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Overview Stat Card */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-2">
-            <span className="text-xs font-medium">Total Repositories</span>
-            <FolderGit2 className="w-4 h-4" />
-          </div>
-          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            {repositories.length}
-          </p>
-        </div>
-
-        <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 block mb-1">
-              Quick Action
-            </span>
-            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-              New Repository
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsCreateRepoOpen(true)}
-            className="px-3.5 py-1.5 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-900 rounded-lg transition-colors cursor-pointer"
-          >
-            Add Repository
-          </button>
-        </div>
-      </div>
-
       {/* Main Repositories Table Box */}
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
         {/* Search Bar */}
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/30 flex items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 max-w-md lg:max-w-lg">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
               <Search className="w-4 h-4" />
             </div>
@@ -278,96 +206,92 @@ export default function Home() {
                   </td>
                 </tr>
               ) : (
-                filteredRepositories.map((repo) => (
-                  <tr
-                    key={repo.id}
-                    className="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 transition-colors"
-                  >
-                    {/* 1. Icon (without id) */}
-                    <td className="px-4 py-3">
-                      {repo.icon ? (
-                        <Image
-                          src={repo.icon}
-                          alt={repo.name}
-                          width={24}
-                          height={24}
-                          unoptimized
-                          className="w-6 h-6 rounded-md object-cover border border-zinc-200 dark:border-zinc-700"
-                        />
-                      ) : (
-                        <div className="w-6 h-6 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
-                          <FolderGit2 className="w-3.5 h-3.5" />
+                filteredRepositories.map((repo) => {
+                  const detailsHref = `/repositories/${encodeURIComponent(repo.id)}`;
+                  return (
+                    <tr
+                      key={repo.id}
+                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 transition-colors"
+                    >
+                      {/* 1. Icon (without id) */}
+                      <td className="px-4 py-3">
+                        <Link href={detailsHref} className="inline-block">
+                          <RepoIcon src={repo.icon} name={repo.name} size="sm" />
+                        </Link>
+                      </td>
+
+                      {/* 2. Name */}
+                      <td className="px-4 py-3 font-semibold text-zinc-900 dark:text-zinc-100">
+                        <Link
+                          href={detailsHref}
+                          className="hover:underline underline-offset-2"
+                        >
+                          {repo.name}
+                        </Link>
+                      </td>
+
+                      {/* 3. Description */}
+                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 max-w-xs lg:max-w-md xl:max-w-lg truncate">
+                        {repo.description || "—"}
+                      </td>
+
+                      {/* 4. Tag count */}
+                      <td className="px-4 py-3 font-mono text-zinc-700 dark:text-zinc-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px]">
+                          <TagIcon className="w-3 h-3 text-zinc-400" />
+                          {repo.tag_count ?? 0}
+                        </span>
+                      </td>
+
+                      {/* 5. Manifest count */}
+                      <td className="px-4 py-3 font-mono text-zinc-700 dark:text-zinc-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px]">
+                          {repo.manifest_count ?? 0}
+                        </span>
+                      </td>
+
+                      {/* 6. Created at */}
+                      <td className="px-4 py-3 text-zinc-500 text-[11px] whitespace-nowrap">
+                        {repo.created_at
+                          ? new Date(repo.created_at).toLocaleString()
+                          : "—"}
+                      </td>
+
+                      {/* 7. Updated at */}
+                      <td className="px-4 py-3 text-zinc-500 text-[11px] whitespace-nowrap">
+                        {repo.updated_at
+                          ? new Date(repo.updated_at).toLocaleString()
+                          : "—"}
+                      </td>
+
+                      {/* 8. Actions: View details and Delete */}
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Option 1: View details (dedicated page) */}
+                          <Link
+                            href={detailsHref}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors"
+                            title="View tags and blobs"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-zinc-500" />
+                            <span>View details</span>
+                          </Link>
+
+                          {/* Option 2: Delete */}
+                          <button
+                            type="button"
+                            onClick={() => setRepoToDelete(repo)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+                            title="Delete repository"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
                         </div>
-                      )}
-                    </td>
-
-                    {/* 2. Name */}
-                    <td className="px-4 py-3 font-semibold text-zinc-900 dark:text-zinc-100">
-                      {repo.name}
-                    </td>
-
-                    {/* 3. Description */}
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 max-w-xs truncate">
-                      {repo.description || "—"}
-                    </td>
-
-                    {/* 4. Tag count */}
-                    <td className="px-4 py-3 font-mono text-zinc-700 dark:text-zinc-300">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px]">
-                        <TagIcon className="w-3 h-3 text-zinc-400" />
-                        {repo.tag_count ?? 0}
-                      </span>
-                    </td>
-
-                    {/* 5. Manifest count */}
-                    <td className="px-4 py-3 font-mono text-zinc-700 dark:text-zinc-300">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[11px]">
-                        {repo.manifest_count ?? 0}
-                      </span>
-                    </td>
-
-                    {/* 6. Created at */}
-                    <td className="px-4 py-3 text-zinc-500 text-[11px] whitespace-nowrap">
-                      {repo.created_at
-                        ? new Date(repo.created_at).toLocaleString()
-                        : "—"}
-                    </td>
-
-                    {/* 7. Updated at */}
-                    <td className="px-4 py-3 text-zinc-500 text-[11px] whitespace-nowrap">
-                      {repo.updated_at
-                        ? new Date(repo.updated_at).toLocaleString()
-                        : "—"}
-                    </td>
-
-                    {/* 8. Actions: View details and Delete */}
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
-                        {/* Option 1: View details (shows tags and blobs) */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDetails(repo)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
-                          title="View tags and blobs"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-zinc-500" />
-                          <span>View details</span>
-                        </button>
-
-                        {/* Option 2: Delete */}
-                        <button
-                          type="button"
-                          onClick={() => setRepoToDelete(repo)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
-                          title="Delete repository"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -421,31 +345,11 @@ export default function Home() {
         </div>
       )}
 
-
-
       {/* Modals */}
       <CreateRepoModal
         isOpen={isCreateRepoOpen}
         onClose={() => setIsCreateRepoOpen(false)}
         onSuccess={handleRefresh}
-      />
-
-      <CreateTagModal
-        isOpen={isCreateTagOpen}
-        onClose={() => setIsCreateTagOpen(false)}
-        repositories={repositories}
-        selectedRepoId={selectedTagRepoId}
-        onSuccess={handleRefresh}
-      />
-
-      <RepoDetailsModal
-        repo={selectedDetailsRepo}
-        isOpen={isDetailsOpen}
-        onClose={() => {
-          setIsDetailsOpen(false);
-          setSelectedDetailsRepo(null);
-        }}
-        onOpenCreateTag={handleOpenCreateTagForRepo}
       />
     </div>
   );

@@ -11,8 +11,8 @@ import {
   RefreshCw,
   Clock,
   Layers,
-  FolderGit2,
 } from "lucide-react";
+import RepoIcon from "@/components/RepoIcon";
 import { api, Repository, TagItem, BlobItem } from "@/lib/api";
 
 interface RepoDetailsModalProps {
@@ -109,9 +109,7 @@ export default function RepoDetailsModal({
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center shadow-xs">
-              <FolderGit2 className="w-5 h-5" />
-            </div>
+            <RepoIcon src={repo.icon} name={repo.name} size="lg" />
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">

@@ -1,4 +1,9 @@
+import path from "path";
 import type { NextConfig } from "next";
+
+const projectRoot = path.resolve(
+  typeof __dirname !== "undefined" ? __dirname : process.cwd()
+);
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -7,7 +12,9 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  outputFileTracingRoot: projectRoot,
   turbopack: {
+    root: projectRoot,
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],

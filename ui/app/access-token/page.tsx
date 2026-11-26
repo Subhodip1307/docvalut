@@ -323,7 +323,7 @@ export default function AccessTokenPage() {
     "px-2.5 py-1.5 text-xs font-medium rounded-md border inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="w-full space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -369,22 +369,6 @@ export default function AccessTokenPage() {
         </div>
       )}
 
-      {/* Error Notification */}
-      {errorMsg && (
-        <div className="p-4 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleRefresh}
-            className="underline font-semibold hover:opacity-80 cursor-pointer"
-          >
-            Retry
-          </button>
-        </div>
-      )}
 
       {/* Missing id warning */}
       {hasMissingIds && (
@@ -622,7 +606,7 @@ export default function AccessTokenPage() {
                       <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100 whitespace-nowrap">
                         {t.name || "—"}
                       </td>
-                      <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 max-w-[240px] truncate">
+                      <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 max-w-[240px] lg:max-w-md xl:max-w-lg truncate">
                         {t.description || "—"}
                       </td>
                       <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 whitespace-nowrap">

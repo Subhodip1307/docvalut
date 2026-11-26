@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   User,
   Building2,
-  MapPin,
-  Globe,
   Mail,
   Camera,
   CheckCircle2,
@@ -20,9 +18,7 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
-    company: "DocVault Technologies Inc.",
-    location: "San Francisco, CA",
-    website: "https://alexmorgan.dev",
+    company: "",
     gravatarEmail: "",
   });
 
@@ -40,9 +36,9 @@ export default function ProfilePage() {
         if (!isCancelled && res.RES && res.data) {
           setFormData((prev) => ({
             ...prev,
-            fullName: res.data.full_name || prev.fullName || "User",
-            username: res.data.username || prev.username,
-            gravatarEmail: res.data.email || prev.gravatarEmail,
+            fullName: res.data?.full_name ?? "",
+            username: res.data?.username ?? "",
+            gravatarEmail: res.data?.email ?? "",
           }));
         }
       } catch {
@@ -53,8 +49,6 @@ export default function ProfilePage() {
             setFormData((prev) => ({
               ...prev,
               username: storedUser,
-              fullName: prev.fullName || storedUser,
-              gravatarEmail: prev.gravatarEmail || `${storedUser}@example.com`,
             }));
           }
         }
@@ -92,8 +86,11 @@ export default function ProfilePage() {
     router.back();
   };
 
+  const displayName = formData.fullName.trim() || formData.username.trim();
+  const displayEmail = formData.gravatarEmail.trim();
+
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full space-y-6">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -119,16 +116,19 @@ export default function ProfilePage() {
         <div className="flex items-center gap-4">
           <div className="relative group">
             <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-semibold text-xl">
-              {formData.fullName
-                ? formData.fullName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()
-                : formData.username
-                ? formData.username.slice(0, 2).toUpperCase()
-                : "U"}
+              {formData.fullName.trim() ? (
+                formData.fullName
+                  .trim()
+                  .split(/\s+/)
+                  .map((n) => n[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()
+              ) : formData.username.trim() ? (
+                formData.username.trim().slice(0, 2).toUpperCase()
+              ) : (
+                <User className="w-6 h-6 text-zinc-400" />
+              )}
             </div>
             <button
               type="button"
@@ -139,22 +139,21 @@ export default function ProfilePage() {
             </button>
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              {formData.fullName || formData.username || "User Profile"}
-            </h2>
-            <p className="text-sm text-zinc-500">
-              {formData.gravatarEmail || "user@example.com"}
-            </p>
+            {displayName && (
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                {displayName}
+              </h2>
+            )}
+            {displayEmail && (
+              <p className="text-sm text-zinc-500">{displayEmail}</p>
+            )}
             <div className="flex items-center gap-2 mt-1">
-              {formData.username && (
+              {formData.username.trim() && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
                   <AtSign className="w-3 h-3" />
-                  {formData.username}
+                  {formData.username.trim()}
                 </span>
               )}
-              <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                DocVault Member
-              </span>
             </div>
           </div>
         </div>
@@ -174,127 +173,81 @@ export default function ProfilePage() {
         </div>
 
         <form onSubmit={handleSave} className="p-6 space-y-5">
-          {/* 1. Full Name */}
-          <div>
-            <label
-              htmlFor="fullName"
-              className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5"
-            >
-              Full name
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                <User className="w-4 h-4" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* 1. Full Name */}
+            <div>
+              <label
+                htmlFor="fullName"
+                className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5"
+              >
+                Full name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
+                />
               </div>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder="e.g. Anurag Kumar"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
-              />
             </div>
-          </div>
 
-          {/* 2. Company */}
-          <div>
-            <label
-              htmlFor="company"
-              className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5"
-            >
-              Company
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                <Building2 className="w-4 h-4" />
+            {/* 2. Company */}
+            <div>
+              <label
+                htmlFor="company"
+                className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5"
+              >
+                Company
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <input
+                  id="company"
+                  name="company"
+                  type="text"
+                  value={formData.company}
+                  onChange={handleChange}
+                  placeholder="Enter your company"
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
+                />
               </div>
-              <input
-                id="company"
-                name="company"
-                type="text"
-                value={formData.company}
-                onChange={handleChange}
-                placeholder="e.g. Acme Corporation"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
-              />
             </div>
-          </div>
 
-          {/* 3. Location */}
-          <div>
-            <label
-              htmlFor="location"
-              className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5"
-            >
-              Location
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                <MapPin className="w-4 h-4" />
+            {/* 3. Gravatar Email */}
+            <div>
+              <label
+                htmlFor="gravatarEmail"
+                className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5"
+              >
+                Gravatar email
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  id="gravatarEmail"
+                  name="gravatarEmail"
+                  type="email"
+                  value={formData.gravatarEmail}
+                  onChange={handleChange}
+                  placeholder="Enter your email"
+                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
+                />
               </div>
-              <input
-                id="location"
-                name="location"
-                type="text"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="e.g. San Francisco, CA"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
-              />
+              <p className="text-xs text-zinc-500 mt-1.5">
+                Your Gravatar email is used to display your profile picture across DocVault.
+              </p>
             </div>
-          </div>
-
-          {/* 4. Website */}
-          <div>
-            <label
-              htmlFor="website"
-              className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5"
-            >
-              Website
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                <Globe className="w-4 h-4" />
-              </div>
-              <input
-                id="website"
-                name="website"
-                type="url"
-                value={formData.website}
-                onChange={handleChange}
-                placeholder="https://example.com"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
-              />
-            </div>
-          </div>
-
-          {/* 5. Gravatar Email */}
-          <div>
-            <label
-              htmlFor="gravatarEmail"
-              className="block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5"
-            >
-              Gravatar email
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                <Mail className="w-4 h-4" />
-              </div>
-              <input
-                id="gravatarEmail"
-                name="gravatarEmail"
-                type="email"
-                value={formData.gravatarEmail}
-                onChange={handleChange}
-                placeholder="e.g. anurag@gmail.com"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 transition-all"
-              />
-            </div>
-            <p className="text-xs text-zinc-500 mt-1.5">
-              Your Gravatar email is used to display your profile picture across DocVault.
-            </p>
           </div>
 
           {/* Actions: Save and Cancel */}

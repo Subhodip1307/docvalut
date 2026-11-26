@@ -25,7 +25,7 @@ export default function Navbar() {
         if (!isCancelled && typeof window !== "undefined") {
           const u = localStorage.getItem("username");
           if (u) {
-            setProfile({ full_name: u, email: `${u}@gmail.com`, username: u });
+            setProfile({ username: u });
           }
         }
       }
@@ -69,6 +69,10 @@ export default function Navbar() {
     };
   }, [isProfileOpen]);
 
+  const displayName =
+    profile?.full_name?.trim() || profile?.username?.trim() || "";
+  const displayEmail = profile?.email?.trim() || "";
+
   return (
     <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-6 flex items-center justify-between sticky top-0 z-30">
       {/* Left: Logo */}
@@ -103,18 +107,24 @@ export default function Navbar() {
         {isProfileOpen && (
           <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg py-1.5 z-50">
             {/* User Info Header */}
-            <Link
-              href="/profile"
-              onClick={() => setIsProfileOpen(false)}
-              className="block px-3.5 py-2 border-b border-zinc-100 dark:border-zinc-800 mb-1 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-t-lg transition-colors"
-            >
-              <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                {profile?.full_name || profile?.username || "My Profile"}
-              </p>
-              <p className="text-[11px] text-zinc-500 truncate">
-                {profile?.email || "user@example.com"}
-              </p>
-            </Link>
+            {(displayName || displayEmail) && (
+              <Link
+                href="/profile"
+                onClick={() => setIsProfileOpen(false)}
+                className="block px-3.5 py-2 border-b border-zinc-100 dark:border-zinc-800 mb-1 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-t-lg transition-colors"
+              >
+                {displayName && (
+                  <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                    {displayName}
+                  </p>
+                )}
+                {displayEmail && (
+                  <p className="text-[11px] text-zinc-500 truncate">
+                    {displayEmail}
+                  </p>
+                )}
+              </Link>
+            )}
 
             {/* Option 1: My Profile */}
             <Link

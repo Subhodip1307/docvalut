@@ -23,7 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main Content Area with Sidebar */}
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto bg-zinc-50/50 dark:bg-zinc-900/20">
+        <main className="flex-1 min-w-0 p-6 lg:p-8 overflow-y-auto bg-zinc-50/50 dark:bg-zinc-900/20">
           {children}
         </main>
       </div>
