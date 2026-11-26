@@ -18,7 +18,7 @@ from . import create
 View_Router = SimpleRouter()
 
 View_Router.register("my-repository",views.MyRepository,basename="my-repository")
-View_Router.register("upload-sessions",views.UploadSessionViewSet,basename="upload-sessions",)
+# View_Router.register("upload-sessions",views.UploadSessionViewSet,basename="upload-sessions",)
 View_Router.register("blobs",views.BlobViewSet,basename="blobs",)
 View_Router.register("manifests",views.ManifestViewSet,basename="manifests")
 View_Router.register("repository-manifests",views.RepositoryManifestViewSet,basename="repository-manifests",)

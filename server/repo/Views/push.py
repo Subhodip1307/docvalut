@@ -1,13 +1,19 @@
-from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
-from django.http import HttpResponse
 from repo import models
 import os,re,hashlib
 from django.db import transaction
 from django.conf import settings
 from urllib.parse import unquote
 from accounts.common import BaseCliView
+
+
+class CheckRepo(BaseCliView):
+    def get(self,request,repository):
+        repo = models.Repository.objects.filter(name=repository).exists()
+        if not repo:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_200_OK)
 
 
 class Check_Blob(BaseCliView):

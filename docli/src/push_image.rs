@@ -18,6 +18,7 @@ const BASE_DOMAIN: &str = "http://127.0.0.1:8000/v1/";
 /*
 TODO:
 1.Improve error handeling,
+2. check if repo is there before pushing
 */
 
 pub fn push(image_reference: &str) {

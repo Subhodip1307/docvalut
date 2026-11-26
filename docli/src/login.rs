@@ -1,5 +1,5 @@
 use keyring::Entry;
-
+// also check the auth token
 
 pub fn init_login(token:&String){
     if let  Err(e)=save_cread(token){

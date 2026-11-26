@@ -34,10 +34,10 @@ class MyRepository(BaseClass):
         name = name.strip()
         name = f"{request.user.username}/{name.strip()}"
 
-        if Repository.objects.filter(name=name).exists():
+        if Repository.objects.filter(name=name,created_by=request.user).exists():
             return Response({"RES": False, "msg": f"A repository named '{name}' already exists.", "data": ""})
 
-        repo = Repository.objects.create(name=name, description=description, icon=icon)
+        repo = Repository.objects.create(name=name, description=description, icon=icon,created_by=request.user)
         serializer = RepositorySerializer(repo)
         return Response({"RES": True, "msg": "Repository created.", "data": serializer.data})
 

@@ -9,6 +9,8 @@ class Repository(models.Model):
     updated_at=models.DateTimeField(auto_now=True)
     icon=models.ImageField(null=True,blank=True,upload_to='repo_icons/%Y/%m/%d/')
     description = models.TextField(blank=True, default="")
+    markdown=models.TextField(blank=True,null=True)
+    created_by=models.ForeignKey("accounts.User",on_delete=models.CASCADE)
     
 class UploadSession(models.Model):
     ROLE_CHOICES = [

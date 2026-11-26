@@ -11,6 +11,7 @@ fn print_usage(program: &str) {
     println!("Usage:");
     println!("  {program} push <Image:Tag> Pushing New Image");
     println!("  {program} Pull <Image:Tag> Pulling a New Image");
+    println!("  {program} login <Auth token> Login in cli");
     println!("Default Tag is 'latest' ");
 }
 

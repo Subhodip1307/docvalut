@@ -7,26 +7,11 @@ Create operations live in create.py.
 
 URL prefix: /logic/master/view/<basename>/
 """
-
 import json
 from rest_framework.response import Response
 from accounts.common import BaseClass
-from repo.models import (
-    Repository,
-    UploadSession,
-    Blob,
-    Manifest,
-    RepositoryManifest,
-    Tag,
-)
-from .serializer import (
-    RepositorySerializer,
-    UploadSessionSerializer,
-    BlobSerializer,
-    ManifestSerializer,
-    RepositoryManifestSerializer,
-    TagSerializer,
-)
+from repo.models import (Repository,Blob,Manifest,RepositoryManifest,Tag)
+from .serializer import (RepositorySerializer,BlobSerializer,ManifestSerializer,RepositoryManifestSerializer,TagSerializer)
 
 
 # ---------------------------------------------------------------------------
@@ -42,7 +27,7 @@ class MyRepository(BaseClass):
     """
 
     def list(self, request):
-        repos = Repository.objects.all().order_by("-created_at")
+        repos = Repository.objects.filter(created_by=request.user).order_by("-created_at")
         serializer = RepositorySerializer(repos, many=True)
         return Response({"RES": True, "msg": "", "data": serializer.data})
 
@@ -54,40 +39,6 @@ class MyRepository(BaseClass):
         serializer = RepositorySerializer(repo)
         return Response({"RES": True, "msg": "", "data": serializer.data})
 
-
-# ---------------------------------------------------------------------------
-# UploadSession – Read
-# ---------------------------------------------------------------------------
-
-class UploadSessionViewSet(BaseClass):
-    """
-    Read operations for UploadSessions.
-
-    list     GET  /logic/master/view/upload-sessions/     [?repo=<uuid>]
-    retrieve GET  /logic/master/view/upload-sessions/<uuid>/
-    """
-
-    def list(self, request):
-        qs = UploadSession.objects.all().order_by("-created_at")
-        repo_id = request.query_params.get("repo")
-        if repo_id:
-            qs = qs.filter(repo_id=repo_id)
-        serializer = UploadSessionSerializer(qs, many=True)
-        return Response({"RES": True, "msg": "", "data": serializer.data})
-
-    def retrieve(self, request, pk=None):
-        try:
-            session = UploadSession.objects.get(id=pk)
-        except UploadSession.DoesNotExist:
-            return Response({"RES": False, "msg": "Upload session not found.", "data": ""})
-        serializer = UploadSessionSerializer(session)
-        return Response({"RES": True, "msg": "", "data": serializer.data})
-
-
-# ---------------------------------------------------------------------------
-# Blob – Read
-# ---------------------------------------------------------------------------
-
 class BlobViewSet(BaseClass):
     """
     Read operations for Blobs.
@@ -98,26 +49,23 @@ class BlobViewSet(BaseClass):
 
     def list(self, request):
         repo_id = request.query_params.get("repo")
-        if repo_id:
-            repo_manifests = RepositoryManifest.objects.filter(
-                repository_id=repo_id
-            ).select_related("manifest")
-            blob_digests = set()
-            for rm in repo_manifests:
-                try:
-                    manifest_data = json.loads(bytes(rm.manifest.content))
-                    config_digest = manifest_data.get("config", {}).get("digest")
-                    if config_digest:
-                        blob_digests.add(config_digest)
-                    for layer in manifest_data.get("layers", []):
-                        layer_digest = layer.get("digest")
-                        if layer_digest:
-                            blob_digests.add(layer_digest)
-                except Exception:
-                    continue
-            qs = Blob.objects.filter(digest__in=blob_digests)
-        else:
-            qs = Blob.objects.all().order_by("-created_at")
+        repo_manifests = RepositoryManifest.objects.filter(repository__created_by=request.user,
+            repository_id=repo_id
+        ).select_related("manifest")
+        blob_digests = set()
+        for rm in repo_manifests:
+            try:
+                manifest_data = json.loads(bytes(rm.manifest.content))
+                config_digest = manifest_data.get("config", {}).get("digest")
+                if config_digest:
+                    blob_digests.add(config_digest)
+                for layer in manifest_data.get("layers", []):
+                    layer_digest = layer.get("digest")
+                    if layer_digest:
+                        blob_digests.add(layer_digest)
+            except Exception:
+                continue
+        qs = Blob.objects.filter(digest__in=blob_digests)
         serializer = BlobSerializer(qs, many=True)
         return Response({"RES": True, "msg": "", "data": serializer.data})
 
