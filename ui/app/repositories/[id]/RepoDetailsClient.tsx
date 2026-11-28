@@ -15,9 +15,13 @@ import {
   Layers,
   AlertCircle,
   FolderGit2,
+  FileText,
+  Pencil,
+  CheckCircle2,
 } from "lucide-react";
 import RepoIcon from "@/components/RepoIcon";
 import CreateTagModal from "@/components/CreateTagModal";
+import RepoIconModal from "@/components/RepoIconModal";
 import {
   api,
   API_BASE_URL,
@@ -35,6 +39,186 @@ function formatBytes(bytes: number, decimals = 2) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
+function renderInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const regex = /(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith("`") && token.endsWith("`")) {
+      parts.push(
+        <code
+          key={match.index}
+          className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-mono text-[11px]"
+        >
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else if (token.startsWith("**") && token.endsWith("**")) {
+      parts.push(
+        <strong
+          key={match.index}
+          className="font-semibold text-zinc-900 dark:text-zinc-100"
+        >
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (
+      token.startsWith("[") &&
+      token.includes("](") &&
+      token.endsWith(")")
+    ) {
+      const linkText = token.slice(1, token.indexOf("]("));
+      const linkUrl = token.slice(token.indexOf("](") + 2, -1);
+      parts.push(
+        <a
+          key={match.index}
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          {linkText}
+        </a>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
+function SimpleMarkdownRenderer({ content }: { content: string }) {
+  if (!content || !content.trim()) {
+    return (
+      <div className="py-6 text-center text-xs text-zinc-400 italic">
+        No markdown documentation provided for this repository.
+      </div>
+    );
+  }
+
+  const lines = content.split("\n");
+  const elements: React.ReactNode[] = [];
+  let inCodeBlock = false;
+  let codeBlockLines: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.trim().startsWith("```")) {
+      if (inCodeBlock) {
+        elements.push(
+          <div
+            key={`code-${i}`}
+            className="my-3 p-3.5 rounded-lg bg-zinc-900 text-zinc-100 font-mono text-xs overflow-x-auto border border-zinc-800"
+          >
+            <pre className="whitespace-pre">{codeBlockLines.join("\n")}</pre>
+          </div>
+        );
+        codeBlockLines = [];
+        inCodeBlock = false;
+      } else {
+        inCodeBlock = true;
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeBlockLines.push(line);
+      continue;
+    }
+
+    if (line.startsWith("# ")) {
+      elements.push(
+        <h1
+          key={`h1-${i}`}
+          className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mt-4 mb-2 pb-1 border-b border-zinc-200 dark:border-zinc-800"
+        >
+          {renderInline(line.slice(2))}
+        </h1>
+      );
+    } else if (line.startsWith("## ")) {
+      elements.push(
+        <h2
+          key={`h2-${i}`}
+          className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mt-3.5 mb-1.5 pb-1 border-b border-zinc-200 dark:border-zinc-800"
+        >
+          {renderInline(line.slice(3))}
+        </h2>
+      );
+    } else if (line.startsWith("### ")) {
+      elements.push(
+        <h3
+          key={`h3-${i}`}
+          className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mt-3 mb-1"
+        >
+          {renderInline(line.slice(4))}
+        </h3>
+      );
+    } else if (line.startsWith("> ")) {
+      elements.push(
+        <blockquote
+          key={`bq-${i}`}
+          className="my-2 pl-3 border-l-2 border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 italic text-xs"
+        >
+          {renderInline(line.slice(2))}
+        </blockquote>
+      );
+    } else if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
+      elements.push(
+        <li
+          key={`li-${i}`}
+          className="ml-5 list-disc text-xs text-zinc-700 dark:text-zinc-300 my-0.5"
+        >
+          {renderInline(line.trim().slice(2))}
+        </li>
+      );
+    } else if (/^\d+\.\s/.test(line.trim())) {
+      elements.push(
+        <li
+          key={`oli-${i}`}
+          className="ml-5 list-decimal text-xs text-zinc-700 dark:text-zinc-300 my-0.5"
+        >
+          {renderInline(line.trim().replace(/^\d+\.\s/, ""))}
+        </li>
+      );
+    } else if (line.trim() === "") {
+      elements.push(<div key={`sp-${i}`} className="h-2" />);
+    } else {
+      elements.push(
+        <p
+          key={`p-${i}`}
+          className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed my-1"
+        >
+          {renderInline(line)}
+        </p>
+      );
+    }
+  }
+
+  if (inCodeBlock && codeBlockLines.length > 0) {
+    elements.push(
+      <div
+        key="code-end"
+        className="my-3 p-3.5 rounded-lg bg-zinc-900 text-zinc-100 font-mono text-xs overflow-x-auto border border-zinc-800"
+      >
+        <pre className="whitespace-pre">{codeBlockLines.join("\n")}</pre>
+      </div>
+    );
+  }
+
+  return <div className="space-y-0.5 break-words">{elements}</div>;
+}
+
 export default function RepoDetailsClient() {
   const params = useParams<{ id: string }>();
   const rawId = Array.isArray(params?.id) ? params.id[0] : params?.id;
@@ -49,6 +233,56 @@ export default function RepoDetailsClient() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateTagOpen, setIsCreateTagOpen] = useState(false);
+  const [isIconModalOpen, setIsIconModalOpen] = useState(false);
+
+  const handleIconUpdated = (newIconUrl?: string | null) => {
+    if (newIconUrl) {
+      setRepo((prev) => (prev ? { ...prev, icon: newIconUrl } : prev));
+    }
+    handleRefresh();
+  };
+
+  const [isEditingMarkdown, setIsEditingMarkdown] = useState(false);
+  const [markdownInput, setMarkdownInput] = useState("");
+  const [editMarkdownTab, setEditMarkdownTab] = useState<"write" | "preview">("write");
+  const [isSavingMarkdown, setIsSavingMarkdown] = useState(false);
+  const [markdownSaveError, setMarkdownSaveError] = useState("");
+  const [markdownSuccessToast, setMarkdownSuccessToast] = useState("");
+
+  const handleStartEditMarkdown = () => {
+    setMarkdownInput(repo?.markdown || "");
+    setMarkdownSaveError("");
+    setEditMarkdownTab("write");
+    setIsEditingMarkdown(true);
+  };
+
+  const handleCancelEditMarkdown = () => {
+    setIsEditingMarkdown(false);
+    setMarkdownSaveError("");
+  };
+
+  const handleSaveMarkdown = async () => {
+    if (!repo) return;
+    setIsSavingMarkdown(true);
+    setMarkdownSaveError("");
+    try {
+      const res = await api.editMarkdown(repo.id, markdownInput);
+      if (res && res.RES) {
+        setRepo((prev) => (prev ? { ...prev, markdown: markdownInput } : prev));
+        setIsEditingMarkdown(false);
+        setMarkdownSuccessToast("README saved successfully!");
+        setTimeout(() => setMarkdownSuccessToast(""), 3000);
+      } else {
+        setMarkdownSaveError(res?.msg || "Failed to update repository markdown.");
+      }
+    } catch (err: unknown) {
+      setMarkdownSaveError(
+        err instanceof Error ? err.message : "Failed to update markdown."
+      );
+    } finally {
+      setIsSavingMarkdown(false);
+    }
+  };
 
   const copyToClipboard = (text: string, key: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -72,22 +306,36 @@ export default function RepoDetailsClient() {
       setErrorMsg("");
 
       try {
-        const [reposRes, tagsRes, blobsRes] = await Promise.all([
-          api.getRepositories(),
+        const [repoRes, tagsRes, blobsRes] = await Promise.all([
+          api.getRepository(repoId),
           api.getTags(repoId),
           api.getBlobs(repoId),
         ]);
 
         if (isCancelled) return;
 
-        if (reposRes.RES && Array.isArray(reposRes.data)) {
-          const matched =
-            reposRes.data.find((r) => String(r.id) === String(repoId)) ?? null;
-          setRepo(matched);
+        let fetchedRepo: Repository | null = null;
+        if (repoRes) {
+          if (repoRes.RES && repoRes.data) {
+            if (!Array.isArray(repoRes.data) && typeof repoRes.data === "object") {
+              fetchedRepo = repoRes.data;
+            } else if (Array.isArray(repoRes.data) && repoRes.data.length > 0) {
+              fetchedRepo = repoRes.data[0];
+            }
+          } else if (
+            (repoRes as unknown as Record<string, unknown>).id &&
+            (repoRes as unknown as Record<string, unknown>).name
+          ) {
+            fetchedRepo = repoRes as unknown as Repository;
+          }
+        }
+
+        if (fetchedRepo) {
+          setRepo(fetchedRepo);
         } else {
           setRepo(null);
-          if (!reposRes.RES && reposRes.msg) {
-            setErrorMsg(reposRes.msg);
+          if (repoRes && !repoRes.RES && repoRes.msg) {
+            setErrorMsg(repoRes.msg);
           }
         }
 
@@ -186,19 +434,53 @@ export default function RepoDetailsClient() {
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
             <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-3.5 min-w-0">
-                <RepoIcon src={repo.icon} name={repo.name} size="lg" />
+                <button
+                  type="button"
+                  onClick={() => setIsIconModalOpen(true)}
+                  className="relative group cursor-pointer focus:outline-none rounded-xl transition-all hover:ring-2 hover:ring-zinc-400 dark:hover:ring-zinc-600 shrink-0 text-left"
+                  title="Click to view and edit repository icon"
+                >
+                  <RepoIcon src={repo.icon} name={repo.name} size="lg" />
+                  <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white shadow-xs">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </div>
+                </button>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 truncate">
                       {repo.name}
                     </h1>
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                      Repository Details
-                    </span>
                   </div>
                   <p className="text-xs text-zinc-500 mt-1">
                     {repo.description || "No description provided."}
                   </p>
+                </div>
+              </div>
+
+              {/* Moor Push Command */}
+              <div className="w-full sm:w-auto shrink-0 flex flex-col items-start sm:items-end gap-1.5">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                  Moor Command to push a new tag to this repository
+                </span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 font-mono text-xs text-zinc-800 dark:text-zinc-200 shadow-xs">
+                  <span className="select-all">moor push {repo.name}:tagname</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyToClipboard(
+                        `moor push ${repo.name}:tagname`,
+                        "moor-push-command"
+                      )
+                    }
+                    className="cursor-pointer text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors ml-1 p-0.5 rounded"
+                    title="Copy command"
+                  >
+                    {copiedKey === "moor-push-command" ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -278,16 +560,6 @@ export default function RepoDetailsClient() {
                 </button>
               </div>
 
-              {activeTab === "tags" && (
-                <button
-                  type="button"
-                  onClick={() => setIsCreateTagOpen(true)}
-                  className="mb-1.5 px-3 py-1.5 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-900 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Tag</span>
-                </button>
-              )}
             </div>
 
             {/* Tab Content */}
@@ -300,13 +572,14 @@ export default function RepoDetailsClient() {
                       <th className="px-4 py-3 font-medium">Manifest Digest</th>
                       <th className="px-4 py-3 font-medium">Media Type</th>
                       <th className="px-4 py-3 font-medium">Updated</th>
+                      <th className="px-4 py-3 font-medium text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                     {tags.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={4}
+                          colSpan={5}
                           className="p-8 text-center text-zinc-500"
                         >
                           {isLoading
@@ -360,6 +633,25 @@ export default function RepoDetailsClient() {
                             {tag.updated_at
                               ? new Date(tag.updated_at).toLocaleString()
                               : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                copyToClipboard(
+                                  `${repo.name}:${tag.name}`,
+                                  `repo-tag-name-${tag.id}`
+                                )
+                              }
+                              className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer inline-flex items-center justify-center"
+                              title={`Copy ${repo.name}:${tag.name}`}
+                            >
+                              {copiedKey === `repo-tag-name-${tag.id}` ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -440,6 +732,120 @@ export default function RepoDetailsClient() {
             )}
           </div>
 
+          {/* Repository Markdown / README Section */}
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs overflow-hidden">
+            {/* Card Header */}
+            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4 bg-zinc-50/50 dark:bg-zinc-950/20">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-zinc-500" />
+                <h2 className="text-xs font-semibold tracking-wider text-zinc-700 dark:text-zinc-300">
+                  Markdown
+                </h2>
+              </div>
+
+              {!isEditingMarkdown && (
+                <button
+                  type="button"
+                  onClick={handleStartEditMarkdown}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 text-xs font-medium transition-colors cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Edit</span>
+                </button>
+              )}
+            </div>
+
+            {/* Success Toast */}
+            {markdownSuccessToast && (
+              <div className="px-6 py-2.5 bg-emerald-50 dark:bg-emerald-950/40 border-b border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{markdownSuccessToast}</span>
+              </div>
+            )}
+
+            {/* Card Body */}
+            <div className="p-6">
+              {isEditingMarkdown ? (
+                <div className="space-y-4">
+                  {/* Write / Preview Tab switcher */}
+                  <div className="flex items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditMarkdownTab("write")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                          editMarkdownTab === "write"
+                            ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        }`}
+                      >
+                        Write
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditMarkdownTab("preview")}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                          editMarkdownTab === "preview"
+                            ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        }`}
+                      >
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Edit / Preview area */}
+                  {editMarkdownTab === "write" ? (
+                    <textarea
+                      value={markdownInput}
+                      onChange={(e) => setMarkdownInput(e.target.value)}
+                      placeholder="Write repository documentation, instructions, or notes in markdown..."
+                      rows={12}
+                      className="w-full p-3.5 text-xs font-mono rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600 resize-y"
+                    />
+                  ) : (
+                    <div className="min-h-[240px] p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/30">
+                      <SimpleMarkdownRenderer content={markdownInput} />
+                    </div>
+                  )}
+
+                  {markdownSaveError && (
+                    <div className="p-3 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{markdownSaveError}</span>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex items-center justify-end gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleCancelEditMarkdown}
+                      disabled={isSavingMarkdown}
+                      className="px-3.5 py-2 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveMarkdown}
+                      disabled={isSavingMarkdown}
+                      className="px-4 py-2 text-xs font-medium rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-900 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {isSavingMarkdown && (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      )}
+                      <span>{isSavingMarkdown ? "Saving..." : "Save changes"}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <SimpleMarkdownRenderer content={repo.markdown || ""} />
+              )}
+            </div>
+          </div>
+
           {/* Add Tag Modal */}
           <CreateTagModal
             key={repo.id}
@@ -448,6 +854,14 @@ export default function RepoDetailsClient() {
             repositories={[repo]}
             selectedRepoId={repo.id}
             onSuccess={handleRefresh}
+          />
+
+          {/* Edit Repo Icon Modal */}
+          <RepoIconModal
+            isOpen={isIconModalOpen}
+            onClose={() => setIsIconModalOpen(false)}
+            repo={repo}
+            onSuccess={handleIconUpdated}
           />
         </>
       )}

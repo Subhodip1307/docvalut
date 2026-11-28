@@ -235,12 +235,13 @@ export default function RepoDetailsModal({
                     <th className="px-4 py-3 font-medium">Manifest Digest</th>
                     <th className="px-4 py-3 font-medium">Media Type</th>
                     <th className="px-4 py-3 font-medium">Updated</th>
+                    <th className="px-4 py-3 font-medium text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                   {tags.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="p-8 text-center text-zinc-500">
+                      <td colSpan={5} className="p-8 text-center text-zinc-500">
                         {isLoading
                           ? "Loading tags..."
                           : "No tags found for this repository."}
@@ -292,6 +293,25 @@ export default function RepoDetailsModal({
                           {tag.updated_at
                             ? new Date(tag.updated_at).toLocaleString()
                             : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              copyToClipboard(
+                                `${repo?.name || ""}:${tag.name}`,
+                                `modal-tag-name-${tag.id}`
+                              )
+                            }
+                            className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors cursor-pointer inline-flex items-center justify-center"
+                            title={`Copy ${repo?.name || ""}:${tag.name}`}
+                          >
+                            {copiedKey === `modal-tag-name-${tag.id}` ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                         </td>
                       </tr>
                     ))

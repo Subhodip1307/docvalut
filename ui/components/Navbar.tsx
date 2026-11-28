@@ -25,7 +25,7 @@ export default function Navbar() {
         if (!isCancelled && typeof window !== "undefined") {
           const u = localStorage.getItem("username");
           if (u) {
-            setProfile({ username: u });
+            setProfile({ username: u, email: "", full_name: "" });
           }
         }
       }
@@ -82,7 +82,7 @@ export default function Navbar() {
         </div>
         <div className="flex flex-col">
           <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none">
-            DocVault
+            Moorage
           </span>
           <span className="text-[11px] text-zinc-500 font-medium">
             Document Hub

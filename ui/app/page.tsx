@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Tag as TagIcon,
   Plus,
@@ -11,6 +12,8 @@ import {
   Trash2,
   AlertCircle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import CreateRepoModal from "@/components/CreateRepoModal";
@@ -22,6 +25,7 @@ import {
 } from "@/lib/api";
 
 export default function Home() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshIndex, setRefreshIndex] = useState(0);
 
@@ -35,6 +39,13 @@ export default function Home() {
   // Data state
   const [repositories, setRepositories] = useState<Repository[]>([]);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [hasNext, setHasNext] = useState<boolean | null>(null);
+  const [hasPrev, setHasPrev] = useState<boolean | null>(null);
+
   // Loading & notification states
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -44,7 +55,13 @@ export default function Home() {
     setRefreshIndex((prev) => prev + 1);
   };
 
-  // Delete repository handler - calls /logic/master/create/delete-my-repository/
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage === currentPage || isLoading) return;
+    if (totalPages !== null && newPage > totalPages) return;
+    setCurrentPage(newPage);
+  };
+
+  // Delete repository handler - calls /logic/views/create/delete-my-repository/
   const handleConfirmDelete = async () => {
     if (!repoToDelete) return;
     setIsDeleting(true);
@@ -71,7 +88,7 @@ export default function Home() {
     }
   };
 
-  // Fetch repositories only for main table
+  // Fetch repositories with pagination
   useEffect(() => {
     let isCancelled = false;
 
@@ -80,11 +97,55 @@ export default function Home() {
       setErrorMsg("");
 
       try {
-        const repoRes = await api.getRepositories();
+        const repoRes = await api.getRepositories(currentPage);
 
         if (!isCancelled) {
-          if (repoRes.RES && Array.isArray(repoRes.data)) {
-            setRepositories(repoRes.data);
+          if (repoRes && repoRes.RES) {
+            let list: Repository[] = [];
+            let count: number | null = null;
+            let pages: number | null = null;
+            let next: boolean | null = null;
+            let prev: boolean | null = null;
+
+            if (Array.isArray(repoRes.data)) {
+              list = repoRes.data;
+            } else if (repoRes.data && typeof repoRes.data === "object") {
+              const d = repoRes.data as Record<string, unknown>;
+              if (Array.isArray(d.results)) {
+                list = d.results as Repository[];
+              } else if (Array.isArray(d.repositories)) {
+                list = d.repositories as Repository[];
+              } else if (Array.isArray(d.items)) {
+                list = d.items as Repository[];
+              } else if (Array.isArray(d.data)) {
+                list = d.data as Repository[];
+              }
+              if (typeof d.count === "number") count = d.count;
+              if (typeof d.total === "number") count = d.total;
+              if (typeof d.total_pages === "number") pages = d.total_pages;
+              if (typeof d.num_pages === "number") pages = d.num_pages;
+              if (d.next !== undefined) next = !!d.next;
+              if (d.previous !== undefined) prev = !!d.previous;
+            }
+
+            const root = repoRes as unknown as Record<string, unknown>;
+            if (typeof root.count === "number" && count === null) count = root.count;
+            if (typeof root.total === "number" && count === null) count = root.total;
+            if (typeof root.total_pages === "number" && pages === null) pages = root.total_pages;
+            if (typeof root.num_pages === "number" && pages === null) pages = root.num_pages;
+            if (root.next !== undefined && next === null) next = !!root.next;
+            if (root.previous !== undefined && prev === null) prev = !!root.previous;
+
+            setRepositories(list);
+            setTotalCount(count);
+            setTotalPages(pages);
+            setHasNext(next);
+            setHasPrev(prev);
+          } else {
+            if (currentPage > 1 && repoRes && !repoRes.RES) {
+              setRepositories([]);
+              setHasNext(false);
+            }
           }
         }
       } catch {
@@ -103,7 +164,7 @@ export default function Home() {
     return () => {
       isCancelled = true;
     };
-  }, [refreshIndex]);
+  }, [refreshIndex, currentPage]);
 
   // Search filter
   const filteredRepositories = useMemo(() => {
@@ -113,6 +174,24 @@ export default function Home() {
         r.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [repositories, searchQuery]);
+
+  // Numeric page pills
+  const pageNumbers = useMemo(() => {
+    if (!totalPages || totalPages <= 1) return [];
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  }, [totalPages, currentPage]);
 
   return (
     <div className="w-full space-y-6">
@@ -211,7 +290,8 @@ export default function Home() {
                   return (
                     <tr
                       key={repo.id}
-                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 transition-colors"
+                      onClick={() => router.push(detailsHref)}
+                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer"
                     >
                       {/* 1. Icon (without id) */}
                       <td className="px-4 py-3">
@@ -268,19 +348,15 @@ export default function Home() {
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           {/* Option 1: View details (dedicated page) */}
-                          <Link
-                            href={detailsHref}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors"
-                            title="View tags and blobs"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-zinc-500" />
-                            <span>View details</span>
-                          </Link>
+
 
                           {/* Option 2: Delete */}
                           <button
                             type="button"
-                            onClick={() => setRepoToDelete(repo)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRepoToDelete(repo);
+                            }}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
                             title="Delete repository"
                           >
@@ -295,6 +371,69 @@ export default function Home() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Bar */}
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <div>
+            Page <span className="font-semibold text-zinc-900 dark:text-zinc-100">{currentPage}</span>
+            {totalPages ? (
+              <> of <span className="font-semibold text-zinc-900 dark:text-zinc-100">{totalPages}</span></>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1 || hasPrev === false || isLoading}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+
+            {pageNumbers.length > 0 ? (
+              <div className="hidden sm:flex items-center gap-1">
+                {pageNumbers.map((p, idx) =>
+                  typeof p === "number" ? (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => handlePageChange(p)}
+                      disabled={isLoading}
+                      className={`min-w-8 h-8 px-2 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                        p === currentPage
+                          ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs"
+                          : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ) : (
+                    <span key={`dots-${idx}`} className="px-1 text-zinc-400 text-xs">
+                      ...
+                    </span>
+                  )
+                )}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={
+                (totalPages !== null && currentPage >= totalPages) ||
+                hasNext === false ||
+                (repositories.length === 0 && currentPage > 1) ||
+                isLoading
+              }
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            >
+              <span>Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -320,7 +459,7 @@ export default function Home() {
             </div>
 
             <p className="text-xs text-zinc-600 dark:text-zinc-400">
-              This action will remove the repository from the vault using <code className="text-zinc-800 dark:text-zinc-200 font-mono text-[11px]">/logic/master/create/delete-my-repository/</code>.
+              This action will remove the repository from the vault using <code className="text-zinc-800 dark:text-zinc-200 font-mono text-[11px]">/logic/views/create/delete-my-repository/</code>.
             </p>
 
             <div className="pt-2 flex items-center justify-end gap-3">
