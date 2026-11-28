@@ -10,7 +10,7 @@ from accounts.common import BaseCliView
 
 class CheckRepo(BaseCliView):
     def get(self,request,repository):
-        repo = models.Repository.objects.filter(name=repository).exists()
+        repo = models.Repository.objects.filter(name=repository,created_by=request.user).exists()
         if not repo:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_200_OK)
@@ -21,7 +21,7 @@ class Check_Blob(BaseCliView):
     Check if a blob exists or not
     """
     def get(self,request,repository,digest):
-        blob = models.Blob.objects.filter(digest=digest).first()
+        blob = models.Blob.objects.filter(digest=digest,session__repo__name=repository,session__repo__created_by=request.user).first()
         if not blob:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -39,7 +39,7 @@ class BlobUploadViewSet(BaseCliView):
     def post(self, request, repository=None):
         repository=unquote(repository)
         # print("========== DOCKER UPLOAD REQUEST ==========")
-        repo=models.Repository.objects.filter(name=repository).first()
+        repo=models.Repository.objects.filter(name=repository,created_by=request.user).first()
         if not repo:
             return Response({"error": "Repository not found"},status=status.HTTP_404_NOT_FOUND)
         session = models.UploadSession.objects.create(repo=repo,offset=0,status="pending")
@@ -59,7 +59,7 @@ class BlobUploadViewSet(BaseCliView):
 
         session = models.UploadSession.objects.filter(
             id=upload_uuid,
-            repo__name=repository
+            repo__name=repository,repo__created_by=request.user
         ).first()
 
         if not session:
@@ -92,10 +92,6 @@ class BlobUploadViewSet(BaseCliView):
 
         session.offset = os.path.getsize(temp_path)
         session.save(update_fields=["offset", "updated_at"])
-
-        print("Received bytes:", received_bytes)
-        print("Total file size:", session.offset)
-
         return Response(
             {"message": "Chunk received"},
             status=status.HTTP_202_ACCEPTED,
@@ -115,7 +111,7 @@ class BlobUploadViewSet(BaseCliView):
         # 1. Find upload session
         session = models.UploadSession.objects.filter(
             id=upload_uuid,
-            repo__name=repository
+            repo__name=repository,repo__created_by=request.user
         ).first()
 
         if not session:
@@ -152,11 +148,6 @@ class BlobUploadViewSet(BaseCliView):
                 file_size += len(chunk)
 
         calculated_digest = f"sha256:{sha256.hexdigest()}"
-
-        print("Expected digest:", expected_digest)
-        print("Calculated digest:", calculated_digest)
-        print("File size:", file_size)
-
         # 5. Verify digest
         if calculated_digest != expected_digest:
             return Response(
@@ -188,7 +179,7 @@ class BlobUploadViewSet(BaseCliView):
             with transaction.atomic():
 
                 existing_blob = models.Blob.objects.filter(
-                    digest=expected_digest
+                    digest=expected_digest,session__repo__name=repository,session__repo__created_by=request.user
                 ).first()
 
                 if existing_blob:
@@ -205,6 +196,7 @@ class BlobUploadViewSet(BaseCliView):
                         digest=expected_digest,
                         size=file_size,
                         storage_path=storage_path,
+                        session=session
                     )
 
                 session.status = "completed"
@@ -232,7 +224,6 @@ class ManifestUploadViewSet(BaseCliView):
     def put(self, request, repository=None, reference=None):
         # Find repository
         print("the repo is ",repository)
-        print(models.Repository.objects.all().values("name"))
         repo = models.Repository.objects.filter(name=repository).first()
 
         if not repo:

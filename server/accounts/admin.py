@@ -12,6 +12,8 @@ class CliTokenAdmin(admin.ModelAdmin):
         "created_at",
         "expires_at",
         "is_active",
+        "token",
+
     )
 
     list_filter = (
@@ -27,7 +29,7 @@ class CliTokenAdmin(admin.ModelAdmin):
 
     readonly_fields = (
         "id",
-        "token",
+        # "token",
         "created_at",
         "updated_at",
     )

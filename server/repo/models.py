@@ -1,7 +1,7 @@
 from django.db import models
 import  uuid,os
 from django.conf import settings
-
+#TODO: Create an api for cli to push all digest of all layers to store them in a model
 class Repository(models.Model):
     id = models.UUIDField(primary_key=True,default=uuid.uuid7,editable=False)
     name=models.CharField(max_length=100)
@@ -35,6 +35,7 @@ class UploadSession(models.Model):
 
     
 class Blob(models.Model):
+    session=models.ForeignKey(UploadSession,on_delete=models.CASCADE)
     digest = models.CharField(max_length=71, primary_key=True)
     size = models.BigIntegerField()
     storage_path = models.CharField(max_length=500)

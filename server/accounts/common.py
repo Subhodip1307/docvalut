@@ -6,7 +6,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from accounts.models import CliToken
 from django.utils import timezone
 from rest_framework.views import APIView
-
+from django.core.cache import cache
 
 class BaseClass(ViewSet):
     authentication_classes=[TokenAuthentication,SessionAuthentication]
@@ -22,11 +22,15 @@ class CliTokenAuthentication(BaseAuthentication):
             raise AuthenticationFailed("CLI token is required.")
 
         token = auth_header.split(" ", 1)[1].strip()
-        # TODO: add cache here
-        cli_token = CliToken.objects.filter(
-            token=token,
-            is_active=True
-        ).first()
+        auth=cache.get(f"clitoken:{token}")
+        if auth:
+            cli_token=auth
+        else:
+            cli_token = CliToken.objects.filter(
+                token=token,
+                is_active=True
+            ).first()
+            cache.set(f"clitoken:{token}",cli_token,1000)
 
         if not cli_token:
             raise AuthenticationFailed("Invalid token.")

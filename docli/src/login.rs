@@ -11,7 +11,7 @@ pub fn init_login(token:&String){
 }
 
 fn save_cread(token:&String) -> Result<(), Box<dyn std::error::Error>>{
-    let entry = Entry::new("docvalut", "Etheric_Sea")?;
+    let entry = Entry::new("Moorage", "Etheric_Sea")?;
     entry.set_password(token)?;
     Ok(())
 }

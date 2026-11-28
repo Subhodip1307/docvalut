@@ -4,6 +4,7 @@ from .Views.push import *
 from .Views import pull as pull_image
 
 urlpatterns = [
+    path("push/<path:repository>/check/",CheckRepo.as_view(),name="repo_checking"),
     path("push/<path:repository>/blobs/uploads/",BlobUploadViewSet.as_view(),name="blob-upload"),
     path("push/<path:repository>/blobs/uploads/<str:upload_uuid>",BlobUploadViewSet.as_view(),name="blob-upload-patch"),
     path("push/<path:repository>/blobs/<str:digest>",Check_Blob.as_view(),name="check-blob",),

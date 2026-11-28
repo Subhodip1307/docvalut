@@ -1,8 +1,7 @@
-
 app_name="logic"
 from django.urls import path,include
-from logic.master import urls as master_urls
+from logic.Views import urls as Views_urls
 
 urlpatterns = [
-   path('master/',include(master_urls),name="master"),#logic/master/
+   path('views/',include(Views_urls),name="views"),#logic/views/
 ]

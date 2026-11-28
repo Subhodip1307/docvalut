@@ -27,9 +27,8 @@ class RepositorySerializer(serializers.ModelSerializer):
             "tag_count",
             "manifest_count",
             "created_at",
-            "updated_at",
+            "updated_at",'markdown'
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "tag_count", "manifest_count"]
 
     def get_tag_count(self, obj):
         return obj.tags.count()
@@ -56,7 +55,6 @@ class UploadSessionSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "repo_name"]
 
 
 class BlobSerializer(serializers.ModelSerializer):
@@ -71,10 +69,8 @@ class BlobSerializer(serializers.ModelSerializer):
         fields = [
             "digest",
             "size",
-            "storage_path",
             "created_at",
         ]
-        read_only_fields = ["digest", "size", "storage_path", "created_at"]
 
 
 class ManifestSerializer(serializers.ModelSerializer):
@@ -91,7 +87,6 @@ class ManifestSerializer(serializers.ModelSerializer):
             "media_type",
             "created_at",
         ]
-        read_only_fields = ["digest", "media_type", "created_at"]
 
 
 class RepositoryManifestSerializer(serializers.ModelSerializer):
@@ -113,7 +108,6 @@ class RepositoryManifestSerializer(serializers.ModelSerializer):
             "manifest_digest",
             "manifest_media_type",
         ]
-        read_only_fields = ["id", "repository_name", "manifest_digest", "manifest_media_type"]
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -137,10 +131,4 @@ class TagSerializer(serializers.ModelSerializer):
             "manifest_media_type",
             "updated_at",
         ]
-        read_only_fields = [
-            "id",
-            "repository_name",
-            "manifest_digest",
-            "manifest_media_type",
-            "updated_at",
-        ]
+        

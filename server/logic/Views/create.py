@@ -1,17 +1,12 @@
 """
-create.py – Create ViewSets for the Docker/OCI registry management API.
-
-All ViewSets extend BaseClass (TokenAuthentication + IsAuthenticated).
 Only create operations are defined here.
-Read operations live in views.py.
-
-URL prefix: /logic/master/create/<basename>/
+URL prefix: /logic/views/create/<basename>/
 """
 
 from rest_framework.response import Response
 from accounts.common import BaseClass
-from repo.models import (Repository,)
-from .serializer import (RepositorySerializer)
+from repo.models import Repository
+from .serializer import RepositorySerializer
 
 
 # ---------------------------------------------------------------------------
@@ -20,7 +15,7 @@ from .serializer import (RepositorySerializer)
 
 class MyRepository(BaseClass):
     """
-    POST /logic/master/create/my-repository/
+    POST /logic/views/create/my-repository/
     """
 
     def create(self, request):
@@ -43,7 +38,7 @@ class MyRepository(BaseClass):
 
 class DeleteMyRepository(BaseClass):
     """
-    POST /logic/master/create/delete-my-repository/
+    POST /logic/views/create/delete-my-repository/
     """
 
     def create(self, request):

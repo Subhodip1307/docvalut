@@ -11,7 +11,9 @@ DATABASES = {
         "PORT": "5432",
     }
 }
+ALLOWED_HOSTS = ['*']
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000","http://192.168.0.151:3000"]
 CSRF_TRUSTED_ORIGINS = []
+CORS_ALLOW_HEADERS=["*"]
 #uvicorn core.asgi:application --host 0.0.0.0 --port 8000 --reload
 

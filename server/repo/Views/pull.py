@@ -11,12 +11,11 @@ class ManifestDownloadView(BaseCliView):
     def get(self, request):
         repository=request.GET.get("repository")
         reference=request.GET.get("reference")
-        repo=models.Repository.objects.get(name=repository)
+        repo=models.Repository.objects.get(name=repository,created_by=request.user)
         if reference.startswith("sha256:"):
-            manifest = models.Manifest.objects.get(digest=reference)
+            manifest = models.Manifest.objects.get(digest=reference)#TODO:add access control
         else:
-            print("the tag is ",reference)
-            tag = models.Tag.objects.get(repository=repo,name=reference)
+            tag = models.Tag.objects.get(repository=repo,name=reference,repository__created_by=request.user)
             manifest = tag.manifest
 
         print("here is the data")
@@ -33,8 +32,8 @@ class ManifestDownloadView(BaseCliView):
 
 class BlobDownloadView(BaseCliView):
 
-    def get_blob(self, repository, digest):
-        repo = models.Repository.objects.filter(name=repository).exists()
+    def get_blob(self,user, repository, digest):
+        repo = models.Repository.objects.filter(name=repository,created_by=user).exists()
         if not repo:
             raise Http404("Repo not found")
         print("The digest is ",digest)
@@ -47,7 +46,7 @@ class BlobDownloadView(BaseCliView):
     def get(self, request):
         repository=request.GET.get("repository")
         digest=request.GET.get("digest")
-        blob = self.get_blob(repository, digest)
+        blob = self.get_blob(request.user,repository, digest)
 
         response = FileResponse(
             open(blob.storage_path, "rb"),
@@ -78,11 +77,11 @@ class TagListView(BaseCliView):
         repository=request.GET.get("repository")
         repo = get_object_or_404(
             models.Repository,
-            name=repository
+            name=repository,created_by=request.user
         )
 
         tags = models.Tag.objects.filter(
-            repository=repo
+            repository=repo #no need for access control here
         ).order_by("name").values_list(
             "name",
             flat=True

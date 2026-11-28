@@ -4,11 +4,7 @@ use rayon::prelude::*;
 use reqwest::StatusCode;
 use std::fs::{File,self};
 use std::thread;
-use std::{
-    cmp::min,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{cmp::min,path::{Path, PathBuf},sync::Arc};
 use tar::Archive;
 use uuid::Uuid;
 
@@ -18,11 +14,21 @@ const BASE_DOMAIN: &str = "http://127.0.0.1:8000/v1/";
 /*
 TODO:
 1.Improve error handeling,
-2. check if repo is there before pushing
 */
 
 pub fn push(image_reference: &str) {
     std::fs::create_dir_all(EXPORT_PATH).unwrap();
+    let (image_name, tag) = separate_tag_n_image(image_reference);
+    let client = init_client();
+    match check_repo(image_name.clone(),client.clone()){
+        Err(e)=>println!("{e}"),
+        Ok(v)=>{
+            if !v{
+                println!("No repo Found: {}",image_name);
+                return;
+            }
+        }
+    };
     // ex : image_reference :- "mongo:v1"  or "mongo"
     let exported_path = match pull_image(image_reference) {
         Ok(p) => p,
@@ -31,10 +37,9 @@ pub fn push(image_reference: &str) {
             return;
         }
     }; // contains full path of the exported folder
-
     match unzip_image(&exported_path) {
         Ok(_) => {
-            if let Err(e)=read_manifest(&exported_path, image_reference){
+            if let Err(e)=read_manifest(&exported_path, image_name,tag,client){
                 println!("{e}");
             };
         }
@@ -43,6 +48,23 @@ pub fn push(image_reference: &str) {
         },
     }
     clear_file(exported_path);
+}
+
+fn check_repo(image_name: Arc<String>,client:Ac)-> Result<bool, Box<dyn std::error::Error>>{
+    // check if repo is created or not
+    // return false means repo is not created in server no repo found
+    let resp=client.get(
+        format!("{BASE_DOMAIN}push/{image_name}/check/")
+    ).send()?;
+    let status=resp.status();
+    if status==StatusCode::OK{
+        Ok(true)
+    }else if status==StatusCode::GATEWAY_TIMEOUT || status == StatusCode::BAD_GATEWAY || status==StatusCode::SERVICE_UNAVAILABLE {
+        Err("Unreachble server".into())
+    }
+    else {
+        Ok(false)
+    }
 }
 
 fn pull_image(image_reference: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -88,12 +110,12 @@ fn unzip_image(package_path: &Path) -> std::io::Result<()> {
 
 fn read_manifest(
     image_path: &Path,
-    image_reference: &str,
+    image_name: Arc<String>,
+    tag: Arc<String>,client:Ac
+
 ) -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(image_path.join("manifest.json"))?;
     let manifests: Vec<Manifest> = serde_json::from_reader(file)?;
-    let client = init_client();
-    let (image_name, tag) = separate_tag_n_image(image_reference);
     let m: &Manifest = &manifests[0];
     let config_layer = create_config_layer(image_path, &m.config);
     // println!("config: {}", m.config);
@@ -113,7 +135,7 @@ fn read_manifest(
         .num_threads(thread_count) // your computed value
         .build()
         .unwrap();
-    pool.install(|| {
+        pool.install(|| {
         all_layers_iter.par_iter().for_each(|layer| {
             let data = ApiData {
                 tag: tag.clone(),
@@ -129,7 +151,6 @@ fn read_manifest(
             }
         });
     });
-    // ToDO need to write code to delete the folder and it's tar
 
     Ok(())
 }
@@ -160,7 +181,8 @@ fn push_api_collections(api_client: Ac, data: ApiData) -> Result<(), Box<dyn std
     if res.status() != StatusCode::NOT_FOUND {
         return Ok(());
     }
-    println!("========== Session create ==========");
+    //TODO: need to check diget and size comming from the server
+    // println!("========== Session create ==========");
     // creating session to upload
     let res = api_client
         .post(format!(
@@ -176,11 +198,10 @@ fn push_api_collections(api_client: Ac, data: ApiData) -> Result<(), Box<dyn std
         Some(v) => v,
         None => return Err("Docker upload ID not found".into()),
     };
-    println!("========== PATCH UPLOAD ==========");
-    println!("the paht is {:?}", data.get_path());
+    // println!("========== PATCH UPLOAD ==========");
     let file = File::open(data.get_path())?;
 
-    let res = api_client
+    let _ = api_client
         .patch(format!(
             "{BASE_DOMAIN}push/{IMAGE_NAME}/blobs/uploads/{upload_uuid}",
             IMAGE_NAME = data.image_name,
@@ -190,8 +211,6 @@ fn push_api_collections(api_client: Ac, data: ApiData) -> Result<(), Box<dyn std
         .body(file)
         .send()?;
 
-    println!("{}", res.status());
-    println!("{}", res.text()?);
     println!("========== FINALIZE BLOB UPLOAD ==========");
     let res = api_client
         .put(format!(

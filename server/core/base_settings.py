@@ -7,7 +7,7 @@ SECRET_KEY = 'django-insecure-upcc$m8ky311my62*0$)%525lxa43)qz_der)@*(&***g0xoco
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
 CORS_ALLOWED_ORIGINS = []
 CSRF_TRUSTED_ORIGINS = []
 
@@ -101,6 +101,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = "accounts.User"
+MEDIA_URL = "/media/"
 MEDIA_ROOT=Path.joinpath(BASE_DIR,"media")
 
 CORS_ALLOWED_ORIGINS = []
@@ -112,6 +113,6 @@ CORS_ALLOW_METHODS = (
     "OPTIONS",
     "POST",
 )
-CORS_ALLOW_HEADERS=["*"]
+CORS_ALLOW_HEADERS=[]
 
 
